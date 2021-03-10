@@ -47,14 +47,19 @@ app.listen(port, () => {
 function requestData() 
 {
   return evohomeClient.getLocationsWithAutoLogin(2147483).then(locations => {
-    
+    console.log(locations);
     console.log(locations[0].devices[1].name, locations[0].devices[1].thermostat.indoorTemperature);
     console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
     console.log(locations[0].devices[3].name, locations[0].devices[3].thermostat.indoorTemperature);
-    var result = {cellar: locations[0].devices[1].thermostat.indoorTemperature,
-            ground: locations[0].devices[2].thermostat.indoorTemperature,
-            first: locations[0].devices[3].thermostat.indoorTemperature,
-            timestamp: Date.now()};
+
+    var result = {};
+
+    for (var i = 0; i < locations[0].devices.length; i++)
+    {
+      var device = locations[0].devices[i];
+      result[device.name.split(" ")[0].toLowerCase()] = device.thermostat.indoorTemperature;
+    }
+    result.timestamp = Date.now();
 
     data.push(result);
     fs.writeFileSync('public/data.json', JSON.stringify(data));
