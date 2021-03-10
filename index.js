@@ -72,7 +72,7 @@ function login()
     {
       clearInterval(interval);
     }
-    interval = setInterval(requestData, 1 * 60 * 1000);
+    interval = setInterval(requestData, 10 * 60 * 1000);
     return requestData();
 }
 
