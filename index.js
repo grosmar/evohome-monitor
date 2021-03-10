@@ -1,6 +1,7 @@
 const EvohomeClient = require('@svrooij/evohome/lib').EvohomeClient
 const express = require('express')
 var evohomeClient = null;
+var interval = null;
 
 var username = '';
 var password = '';
@@ -67,7 +68,11 @@ function requestData()
 function login()
 {
     evohomeClient = new EvohomeClient(username, password)
-    setInterval(requestData, 10 * 60 * 1000);
+    if (interval) 
+    {
+      clearInterval(interval);
+    }
+    interval = setInterval(requestData, 10 * 60 * 1000);
     return requestData();
 }
 
