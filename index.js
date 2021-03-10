@@ -1,5 +1,7 @@
-const EvohomeClient = require('@svrooij/evohome/lib').EvohomeClient
-const express = require('express')
+const EvohomeClient = require('@svrooij/evohome/lib').EvohomeClient;
+const express = require('express');
+const db = require('./models/index.js');
+
 var evohomeClient = null;
 var interval = null;
 
@@ -24,6 +26,13 @@ const app = express()
 const port = process.env.PORT || 5000;
 
 app.use(express.static('public'));
+
+app.get('/data', (req, res) => {
+  db.Thermostat.findAll({order: [['createdAt', 'DESC']], limit: req.query.limit || 5})
+  .then(data => {
+    res.send(JSON.stringify(data));
+  });
+});
 
 app.get('/login', (req, res) => {
   
@@ -57,13 +66,29 @@ function requestData()
     for (var i = 0; i < locations[0].devices.length; i++)
     {
       var device = locations[0].devices[i];
-      if (device.name && device.name.length > 0)
-        result[device.name.split(" ")[0].toLowerCase()] = {temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
+      var deviceName = device.name.split(" ")[0];
+      if (deviceName && deviceName.length > 0)
+      {
+        var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
+        console.log('saveToDb', result);
+        db.Thermostat.create(row)
+        .then((data) => {
+          console.log("hello", data);
+        })
+        .catch((e) => {
+          console.log(e);
+        });
+        result[deviceName.toLowerCase()] = row;
+
+      }
     }
     result.timestamp = Date.now();
 
     data.push(result);
     fs.writeFileSync('public/data.json', JSON.stringify(data));
+
+    
+
 
     return result;
   }).catch(err => {

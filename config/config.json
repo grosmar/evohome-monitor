@@ -1,0 +1,19 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "darage",
+    "database": "evohome-monitor",
+    "host": "localhost",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "production": {
+    "username": "grosmar",
+    "password": "",
+    "database": "evohome-monitor",
+    "host": "localhost",
+    "dialect": "postgres",
+    "operatorsAliases": false,
+    "use_env_variable": "DATABASE_URL"
+  }
+}

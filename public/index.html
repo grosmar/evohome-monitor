@@ -20,10 +20,15 @@
 		<canvas id="canvas"></canvas>
 	</div>
 	<script>
-		function loadJSON(callback) {   
+		var colors = [
+			{"temp" : "rgb(255,0,0)", "target": "rgb(255,0,0,0.5)"},
+			{"temp" : "rgb(0,255,0)", "target": "rgb(0,255,0,0.5)"},
+			{"temp" : "rgb(0,0,255)", "target": "rgb(0,0,255,0.5)"}];
+
+		function loadJSON(url, callback) {   
 			var xobj = new XMLHttpRequest();
 				xobj.overrideMimeType("application/json");
-			xobj.open('GET', 'data.json', true); // Replace 'my_data' with the path to your file
+			xobj.open('GET', url, true); // Replace 'my_data' with the path to your file
 			xobj.onreadystatechange = function () {
 				if (xobj.readyState == 4 && xobj.status == "200") {
 					// Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
@@ -34,8 +39,8 @@
 		}
 
 		function getFormattedDate( timestamp ) {
-			var date = new Date();
-			date.setTime(timestamp);
+			var date = new Date(timestamp);
+			
 
 			var month = date.getMonth() + 1;
 			var day = date.getDate();
@@ -61,56 +66,16 @@
 
 		var lineChartData = {
 			labels: [],
-			datasets: [{
-				label: 'Cellar target',
-				borderColor: "lightBlue",
-				backgroundColor: "lightBlue",
-				fill: false,
-				data: []
-			},
-			{
-				label: 'Cellar',
-				borderColor: "blue",
-				backgroundColor: "blue",
-				fill: false,
-				data: []
-			}
-			, {
-				label: 'Ground target',
-				borderColor: "pink",
-				backgroundColor: "pink",
-				fill: false,
-				data: []
-			},
-			{
-				label: 'Ground',
-				borderColor: "red",
-				backgroundColor: "red",
-				fill: false,
-				data: []
-			},
-			{
-				label: 'First target',
-				borderColor: "lightGreen",
-				backgroundColor: "lightGreen",
-				fill: false,
-				data: []
-			},
-			{
-				label: 'First',
-				borderColor: "green",
-				backgroundColor: "green",
-				fill: false,
-				data: []
-			}]
+			datasets: []
 		};
 
 		window.onload = function() {
 
-			loadJSON(function(response) {
+			//loadJSON('data.json', function(response) {
+			loadJSON('/data?limit=1000', function(response) {
     		var data = JSON.parse(response);
 
-			lineChartData.labels = data.map((v) => { return getFormattedDate(v.timestamp) });
+			/*lineChartData.labels = data.map((v) => { return getFormattedDate(v.timestamp) });
 
 			lineChartData.datasets[0].data = data.map((v) => { return v.cellar.target });
 			lineChartData.datasets[1].data = data.map((v) => { return v.cellar.temp });
@@ -118,8 +83,62 @@
 			lineChartData.datasets[3].data = data.map((v) => { return v.ground.temp });
 			lineChartData.datasets[4].data = data.map((v) => { return v.first.target });
 			lineChartData.datasets[5].data = data.map((v) => { return v.first.temp });
-			console.log(data);
+			
+			*/	
+
+			var datasets = [];
+			var labels = [];
+			var colorIndex = 0;
+			
+			for (var i in data)
+			{
+				if (data[i].name == null || data[i].name == "null")
+					continue;
+
+				if (labels.indexOf(getFormattedDate(data[i].createdAt)) == -1)
+				{
+					labels.push(getFormattedDate(data[i].createdAt));
+				}
 				
+				var index = datasets.findIndex((v) => {return v.label == data[i].name});
+				
+				if ( index == -1 )
+				{
+					var tempRow = {
+						label: data[i].name,
+						borderColor: colors[colorIndex].temp,
+						backgroundColor: colors[colorIndex].temp,
+						fill: false,
+						data: []
+					};
+					var targetRow = {
+						label: data[i].name + " Target",
+						borderColor: colors[colorIndex].target,
+						backgroundColor: colors[colorIndex].target,
+						fill: false,
+						data: []
+					};
+					colorIndex++;
+					if (colorIndex >= colors.length)
+						colorIndex = 0;
+					datasets.push(tempRow, targetRow);
+
+					var index = datasets.findIndex((v) => {return v.label == data[i].name});
+				}
+				else
+				{
+					var tempRow = datasets[index];
+					var targetRow = datasets[index + 1];
+				}
+
+				tempRow.data.push(data[i].temp);
+				targetRow.data.push(data[i].target);
+			}
+
+			lineChartData.datasets = datasets;
+			lineChartData.labels = labels;
+
+			
 			var ctx = document.getElementById('canvas').getContext('2d');
 			window.myLine = Chart.Line(ctx, {
 				data: lineChartData,
@@ -127,7 +146,7 @@
 					responsive: true,
 					title: {
 						display: true,
-						text: 'Chart.js Line Chart'
+						text: 'Evohome thermostat'
 					},
 					tooltips: {
 						mode: 'index',
@@ -142,7 +161,7 @@
 							display: true,
 							scaleLabel: {
 								display: true,
-								labelString: 'Month'
+								labelString: 'Date'
 							}
 						}],
 						yAxes: [{
