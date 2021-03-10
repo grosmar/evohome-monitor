@@ -10,16 +10,6 @@ var password = '';
 
 const fs = require('fs');
 
-try {
-  let rawdata = fs.readFileSync('public/data.json');
-  var data = JSON.parse(rawdata);
-}
-catch (e)
-{
-  var data = [];
-}
-
-
 
 
 const app = express()
@@ -44,6 +34,10 @@ app.get('/login', (req, res) => {
   .then(function(result)
   {
     res.send(JSON.stringify(result));
+  })
+  .catch(function(e)
+  {
+    res.send(JSON.stringify(e));
   });
 })
 
@@ -56,7 +50,7 @@ app.listen(port, () => {
 function requestData() 
 {
   return evohomeClient.getLocationsWithAutoLogin(2147483).then(locations => {
-    console.log(locations);
+    //console.log(locations);
     console.log(locations[0].devices[1].name, locations[0].devices[1].thermostat.indoorTemperature);
     console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
     console.log(locations[0].devices[3].name, locations[0].devices[3].thermostat.indoorTemperature);
@@ -70,10 +64,10 @@ function requestData()
       if (deviceName && deviceName.length > 0)
       {
         var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
-        console.log('saveToDb', result);
+        
         db.Thermostat.create(row)
         .then((data) => {
-          console.log("hello", data);
+          console.log("saved", data);
         })
         .catch((e) => {
           console.log(e);
@@ -83,11 +77,6 @@ function requestData()
       }
     }
     result.timestamp = Date.now();
-
-    data.push(result);
-    fs.writeFileSync('public/data.json', JSON.stringify(data));
-
-    
 
 
     return result;

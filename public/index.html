@@ -75,6 +75,8 @@
 			loadJSON('/data?limit=1000', function(response) {
     		var data = JSON.parse(response);
 
+			data = data.reverse();
+
 			/*lineChartData.labels = data.map((v) => { return getFormattedDate(v.timestamp) });
 
 			lineChartData.datasets[0].data = data.map((v) => { return v.cellar.target });
