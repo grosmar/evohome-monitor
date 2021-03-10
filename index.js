@@ -57,7 +57,8 @@ function requestData()
     for (var i = 0; i < locations[0].devices.length; i++)
     {
       var device = locations[0].devices[i];
-      result[device.name.split(" ")[0].toLowerCase()] = device.thermostat.indoorTemperature;
+      if (device.name && device.name.length > 0)
+        result[device.name.split(" ")[0].toLowerCase()] = {temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
     }
     result.timestamp = Date.now();
 
