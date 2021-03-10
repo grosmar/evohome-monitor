@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   Thermostat.init({
-    data: DataTypes.STRING
+    data: DataTypes.TEXT
   }, {
     sequelize,
     modelName: 'Thermostat',

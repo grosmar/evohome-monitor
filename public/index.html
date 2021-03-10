@@ -71,11 +71,28 @@
 
 		window.onload = function() {
 
-			//loadJSON('data.json', function(response) {
-			loadJSON('/data?limit=1000', function(response) {
-    		var data = JSON.parse(response);
+			var datasets = [];
+			var labels = [];
+			var colorIndex = 0;
 
-			data = data.reverse();
+			//loadJSON('data.json', function(response) {
+			loadJSON('/data?limit=90', function(response) {
+    		var rawdata = JSON.parse(response);
+
+			rawdata = rawdata.reverse();
+
+			var data = [];
+			for ( var i in rawdata )
+			{
+				var day = JSON.parse(rawdata[i].data);
+				for (var j in day)
+				{
+					console.log(j);
+					labels.push(getFormattedDate(day[j].timestamp));
+					data.push(day[j].values);
+				}
+				
+			}
 
 			/*lineChartData.labels = data.map((v) => { return getFormattedDate(v.timestamp) });
 
@@ -88,19 +105,17 @@
 			
 			*/	
 
-			var datasets = [];
-			var labels = [];
-			var colorIndex = 0;
+			
 			
 			for (var i in data)
 			{
-				data[i].data = JSON.parse(data[i].data);
+				//data[i].data = JSON.parse(data[i].data);
 
-				labels.push(getFormattedDate(data[i].createdAt));
+				//labels.push(getFormattedDate(data[i].createdAt));
 
-				for (var j in data[i].data)
+				for (var j in data[i])
 				{
-					var row = data[i].data[j];
+					var row = data[i][j];
 
 					if (row.name == null || row.name == "null")
 						continue;	
