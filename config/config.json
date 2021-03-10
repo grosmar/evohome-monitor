@@ -1,7 +1,7 @@
 {
   "development": {
     "username": "postgres",
-    "password": "darage",
+    "password": "",
     "database": "evohome-monitor",
     "host": "localhost",
     "dialect": "postgres",
