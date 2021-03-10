@@ -145,15 +145,6 @@
 			
 		};
 
-		document.getElementById('randomizeData').addEventListener('click', function() {
-			lineChartData.datasets.forEach(function(dataset) {
-				dataset.data = dataset.data.map(function() {
-					return randomScalingFactor();
-				});
-			});
-
-			window.myLine.update();
-		});
 
 	</script>
 </body>
