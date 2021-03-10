@@ -10,7 +10,7 @@
   "production": {
     "dialect": "postgres",
     "dialectOptions" : {
-      "sll" : {
+      "ssl" : {
         "rejectUnauthorized": false
     }
     },
