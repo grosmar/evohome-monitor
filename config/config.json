@@ -10,7 +10,9 @@
   "production": {
     "dialect": "postgres",
     "dialectOptions" : {
-      "sll" : true
+      "sll" : {
+        "rejectUnauthorized": false
+    }
     },
     "operatorsAliases": false,
     "use_env_variable": "DATABASE_URL"
