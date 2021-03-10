@@ -120,27 +120,8 @@ function requestData()
 
     currentDayData.push(result);
 
-    db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
-    .then((data) => {
-      console.log("saved");
-    })
-    .catch((e) => {
-      console.log(e);
-    });
-
-    /*db.Thermostat.create({data:JSON.stringify(result)})
-    .then((data) => {
-      console.log("saved", data);
-    })
-    .catch((e) => {
-      console.log(e);
-    });*/
-
-
-    return result;
-  }).catch(err => {
-    console.log('Error occured %j', err)
-  })
+    return db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
+  });
 }
 
 function login()
