@@ -46,7 +46,7 @@ app.listen(port, () => {
 
 function requestData() 
 {
-  return evohomeClient.getLocationsWithAutoLogin(31536000).then(locations => {
+  return evohomeClient.getLocationsWithAutoLogin(2147483647).then(locations => {
     //console.log(locations)
     console.log(locations[0].devices[1].name, locations[0].devices[1].thermostat.indoorTemperature);
     console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
