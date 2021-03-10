@@ -94,48 +94,54 @@
 			
 			for (var i in data)
 			{
-				if (data[i].name == null || data[i].name == "null")
-					continue;
+				data[i].data = JSON.parse(data[i].data);
 
-				if (labels.indexOf(getFormattedDate(data[i].createdAt)) == -1)
+				labels.push(getFormattedDate(data[i].createdAt));
+
+				for (var j in data[i].data)
 				{
-					labels.push(getFormattedDate(data[i].createdAt));
-				}
+					var row = data[i].data[j];
+
+					if (row.name == null || row.name == "null")
+						continue;	
+
+						var index = datasets.findIndex((v) => {return v.label == row.name});
 				
-				var index = datasets.findIndex((v) => {return v.label == data[i].name});
-				
-				if ( index == -1 )
-				{
-					var tempRow = {
-						label: data[i].name,
-						borderColor: colors[colorIndex].temp,
-						backgroundColor: colors[colorIndex].temp,
-						fill: false,
-						data: []
-					};
-					var targetRow = {
-						label: data[i].name + " Target",
-						borderColor: colors[colorIndex].target,
-						backgroundColor: colors[colorIndex].target,
-						fill: false,
-						data: []
-					};
-					colorIndex++;
-					if (colorIndex >= colors.length)
-						colorIndex = 0;
-					datasets.push(tempRow, targetRow);
+					if ( index == -1 )
+					{
+						var tempRow = {
+							label: row.name,
+							borderColor: colors[colorIndex].temp,
+							backgroundColor: colors[colorIndex].temp,
+							fill: false,
+							data: []
+						};
+						var targetRow = {
+							label: row.name + " Target",
+							borderColor: colors[colorIndex].target,
+							backgroundColor: colors[colorIndex].target,
+							fill: false,
+							data: []
+						};
+						colorIndex++;
+						if (colorIndex >= colors.length)
+							colorIndex = 0;
+						datasets.push(tempRow, targetRow);
 
-					var index = datasets.findIndex((v) => {return v.label == data[i].name});
-				}
-				else
-				{
-					var tempRow = datasets[index];
-					var targetRow = datasets[index + 1];
-				}
+						var index = datasets.findIndex((v) => {return v.label == row.name});
+					}
+					else
+					{
+						var tempRow = datasets[index];
+						var targetRow = datasets[index + 1];
+					}
 
-				tempRow.data.push(data[i].temp);
-				targetRow.data.push(data[i].target);
+					tempRow.data.push(row.temp);
+					targetRow.data.push(row.target);
+				}
 			}
+
+			console.log(datasets);
 
 			lineChartData.datasets = datasets;
 			lineChartData.labels = labels;

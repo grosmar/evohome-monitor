@@ -55,7 +55,7 @@ function requestData()
     console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
     console.log(locations[0].devices[3].name, locations[0].devices[3].thermostat.indoorTemperature);
 
-    var result = {};
+    var result = [];
 
     for (var i = 0; i < locations[0].devices.length; i++)
     {
@@ -64,19 +64,17 @@ function requestData()
       if (deviceName && deviceName.length > 0)
       {
         var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
-        
-        db.Thermostat.create(row)
-        .then((data) => {
-          console.log("saved", data);
-        })
-        .catch((e) => {
-          console.log(e);
-        });
-        result[deviceName.toLowerCase()] = row;
-
+        result.push(row);
       }
     }
-    result.timestamp = Date.now();
+
+    db.Thermostat.create({data:JSON.stringify(result)})
+    .then((data) => {
+      console.log("saved", data);
+    })
+    .catch((e) => {
+      console.log(e);
+    });
 
 
     return result;

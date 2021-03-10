@@ -8,14 +8,8 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
+      data: {
         type: Sequelize.STRING
-      },
-      temp: {
-        type: Sequelize.FLOAT
-      },
-      target: {
-        type: Sequelize.FLOAT
       },
       createdAt: {
         allowNull: false,
