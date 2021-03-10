@@ -8,12 +8,11 @@
     "operatorsAliases": false
   },
   "production": {
-    "username": "grosmar",
-    "password": "",
-    "database": "evohome-monitor",
+    "username": "niwysfjhzteqii",
+    "password": "a4643d52064e47f440a750fd60764096c2a738113732d758489e13a1ef6c317d",
+    "database": "ddh64vjrnvhvjo",
     "host": "ec2-108-128-104-50.eu-west-1.compute.amazonaws.com",
     "dialect": "postgres",
     "operatorsAliases": false,
-    "use_env_variable": "DATABASE_URL"
   }
 }
