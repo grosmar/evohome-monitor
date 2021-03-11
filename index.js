@@ -1,3 +1,33 @@
+const winston = require('winston');
+const DailyRotateFile = require('winston-daily-rotate-file');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    }),
+    new DailyRotateFile({
+      filename: 'error-%DATE%.log',
+      level: 'error',
+      datePattern: 'YYYY-MM-DD-HH',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d'  
+    }),
+    new DailyRotateFile({
+      filename: 'debug-%DATE%.log',
+      datePattern: 'YYYY-MM-DD-HH',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d'  
+    })
+  ],
+});
+
+
 const EvohomeClient = require('@svrooij/evohome/lib').EvohomeClient;
 const express = require('express');
 const db = require('./models/index.js');
@@ -37,7 +67,7 @@ function getCurrentDay()
       .then(data => {
         if ( data == null )
         {
-          console.log("create new day");
+          logger.info("create new day");
           createCurrentDay()
           .then((currentDayId) => 
           {
@@ -52,7 +82,7 @@ function getCurrentDay()
         {
           currentDayData = JSON.parse(data.data);
           currentDayId = data.id;
-          console.log("found last day", currentDayId);
+          logger.info("found last day", currentDayId);
           
           resolve(currentDayId);
         }  
@@ -88,29 +118,24 @@ function createCurrentDay()
   .then((data) =>
   {
     currentDayId = data.id;
-    console.log(currentDayId);
+    logger.info(currentDayId);
     return currentDayId;
   })
   .catch((e) =>
   {
-    console.log(e);
+    logger.info(e);
     return e;
   });
 }
 
 function requestData() 
 {
-  console.log("requestData", currentDayId);
+  logger.info("requestData", currentDayId);
   return getCurrentDay()
   .then((currentDayId) =>
   {
     return evohomeClient.getLocationsWithAutoLogin(2147483)
     .then(locations => {
-      //console.log(locations);
-      console.log(locations[0].devices[1].name, locations[0].devices[1].thermostat.indoorTemperature);
-      console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
-      console.log(locations[0].devices[3].name, locations[0].devices[3].thermostat.indoorTemperature);
-  
       var result = {timestamp: new Date().getTime(), values:[]};
   
       for (var i = 0; i < locations[0].devices.length; i++)
@@ -123,12 +148,27 @@ function requestData()
           result.values.push(row);
         }
       }
+
+      logger.info(result);
   
       currentDayData.push(result);
   
       return db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
     });
   })
+}
+
+function iterate()
+{
+  requestData()
+  .then( () =>
+  {
+  })
+  .catch( (e) =>
+  {
+    logger.error("request error");
+    logger.error(e);
+  });
 }
 
 function login()
@@ -138,8 +178,8 @@ function login()
     {
       clearInterval(interval);
     }
-    interval = setInterval(requestData, 10 * 60 * 1000);
-    //interval = setInterval(requestData, 10 * 1000);
+    //interval = setInterval(iterate, 10 * 60 * 1000);
+    interval = setInterval(iterate, 10 * 1000);
     return requestData();
 }
 
@@ -167,9 +207,10 @@ app.get('/login', (req, res) => {
   .catch(function(e)
   {
     res.send(JSON.stringify(e));
+    logger.error(e);
   });
 })
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+  logger.info(`Example app listening at http://localhost:${port}`)
 })
