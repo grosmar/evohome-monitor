@@ -15,37 +15,70 @@ var currentDayId = null;
 
 const fs = require('fs');
 
-
-
-const app = express()
-const port = process.env.PORT || 5000;
-
-app.use(express.static('public'));
-
-var start = new Date();
-start.setHours(0,0,0,0);
-
-db.Thermostat.findOne({
-  order: [['createdAt', 'DESC']], 
-  limit: 1,
-  createdAt: {
-    [Op.lt]: new Date(),
-    [Op.gt]: start
-  }
-})
-.then(data => {
-  if ( data == null )
+function getCurrentDay()
+{
+  return new Promise((resolve, reject) =>
   {
-    console.log("create new day");
-    createCurrentDay();
-  }
-  else
-  {
-    currentDayData = JSON.parse(data.data);
-    currentDayId = data.id;
-    console.log("found last day", currentDayId);
-  }  
-});
+    if (currentDayId == null )
+    {
+      var start = new Date();
+      start.setHours(0,0,0,0);
+
+      db.Thermostat.findOne({
+        order: [['createdAt', 'DESC']], 
+        limit: 1,
+        where: {
+          createdAt: {
+            [Op.lt]: new Date(),
+            [Op.gt]: start
+          }
+        }
+      })
+      .then(data => {
+        if ( data == null )
+        {
+          console.log("create new day");
+          createCurrentDay()
+          .then((currentDayId) => 
+          {
+            resolve(currentDayId);
+          })
+          .catch((e) =>
+          {
+            reject(e);
+          });
+        }
+        else
+        {
+          currentDayData = JSON.parse(data.data);
+          currentDayId = data.id;
+          console.log("found last day", currentDayId);
+          
+          resolve(currentDayId);
+        }  
+      });
+    }
+    else 
+    {
+      if (new Date().getDate() != currentDay.getDate())
+      {
+        return createCurrentDay()
+        .then((currentDayId) =>
+        {
+          resolve(currentDayId);
+        })
+        .catch((e) =>
+        {
+          reject(e);
+        });
+      }
+      else
+      {
+        return resolve(currentDayId);
+      }
+    }
+  });
+}
 
 function createCurrentDay()
 {
@@ -56,12 +89,64 @@ function createCurrentDay()
   {
     currentDayId = data.id;
     console.log(currentDayId);
+    return currentDayId;
   })
   .catch((e) =>
   {
     console.log(e);
+    return e;
   });
 }
+
+function requestData() 
+{
+  console.log("requestData", currentDayId);
+  return getCurrentDay()
+  .then((currentDayId) =>
+  {
+    return evohomeClient.getLocationsWithAutoLogin(2147483)
+    .then(locations => {
+      //console.log(locations);
+      console.log(locations[0].devices[1].name, locations[0].devices[1].thermostat.indoorTemperature);
+      console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
+      console.log(locations[0].devices[3].name, locations[0].devices[3].thermostat.indoorTemperature);
+  
+      var result = {timestamp: new Date().getTime(), values:[]};
+  
+      for (var i = 0; i < locations[0].devices.length; i++)
+      {
+        var device = locations[0].devices[i];
+        var deviceName = device.name.split(" ")[0];
+        if (deviceName && deviceName.length > 0)
+        {
+          var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
+          result.values.push(row);
+        }
+      }
+  
+      currentDayData.push(result);
+  
+      return db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
+    });
+  })
+}
+
+function login()
+{
+    evohomeClient = new EvohomeClient(username, password)
+    if (interval) 
+    {
+      clearInterval(interval);
+    }
+    interval = setInterval(requestData, 10 * 60 * 1000);
+    //interval = setInterval(requestData, 10 * 1000);
+    return requestData();
+}
+
+const app = express()
+const port = process.env.PORT || 5000;
+
+app.use(express.static('public'));
 
 app.get('/data', (req, res) => {
   db.Thermostat.findAll({order: [['createdAt', 'DESC']], limit: req.query.limit || 5})
@@ -88,50 +173,3 @@ app.get('/login', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
-
-
-
-function requestData() 
-{
-  var now = new Date();
-  if (now.getDate() != currentDay.getDate())
-  {
-    createCurrentDay();
-  }
-
-  return evohomeClient.getLocationsWithAutoLogin(2147483).then(locations => {
-    //console.log(locations);
-    console.log(locations[0].devices[1].name, locations[0].devices[1].thermostat.indoorTemperature);
-    console.log(locations[0].devices[2].name, locations[0].devices[2].thermostat.indoorTemperature);
-    console.log(locations[0].devices[3].name, locations[0].devices[3].thermostat.indoorTemperature);
-
-    var result = {timestamp: new Date().getTime(), values:[]};
-
-    for (var i = 0; i < locations[0].devices.length; i++)
-    {
-      var device = locations[0].devices[i];
-      var deviceName = device.name.split(" ")[0];
-      if (deviceName && deviceName.length > 0)
-      {
-        var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
-        result.values.push(row);
-      }
-    }
-
-    currentDayData.push(result);
-
-    return db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
-  });
-}
-
-function login()
-{
-    evohomeClient = new EvohomeClient(username, password)
-    if (interval) 
-    {
-      clearInterval(interval);
-    }
-    interval = setInterval(requestData, 10 * 60 * 1000);
-    return requestData();
-}
-
