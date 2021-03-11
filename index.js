@@ -217,7 +217,7 @@ function login()
     {
       clearInterval(interval);
     }
-    interval = setInterval(iterate, 1 * 60 * 1000);
+    interval = setInterval(iterate, 10 * 60 * 1000);
     //interval = setInterval(iterate, 10 * 1000);
 
     return requestData();
