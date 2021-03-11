@@ -3,28 +3,67 @@ const DailyRotateFile = require('winston-daily-rotate-file');
 
 const logger = winston.createLogger({
   level: 'info',
-  format: winston.format.json(),
+  format: winston.format.combine(
+    winston.format.timestamp({
+      format: "DD-MM-YYYY-hh-MM"
+    }),
+    winston.format.printf((info) => {
+      return `${info.timestamp} ${info.level} ${info.message}`;
+    })),
   defaultMeta: { service: 'user-service' },
   transports: [
     new winston.transports.Console({
-      format: winston.format.simple(),
+      format: winston.format.combine(
+        winston.format.timestamp({
+          format: "DD-MM-YYYY hh:MM:ss"
+        }),
+        winston.format.printf((info) => {
+          return `${info.timestamp} ${info.level} ${info.message}`;
+        })),
+      timestamp: true
     }),
     new DailyRotateFile({
       filename: 'public/logs/error-%DATE%.log',
       level: 'error',
-      datePattern: 'YYYY-MM-DD-HH',
+      datePattern: 'YYYY-MM-DD',
       zippedArchive: true,
       maxSize: '20m',
-      maxFiles: '14d'  
+      maxFiles: '14d',
+      timestamp: true,
+      format: winston.format.combine(
+        winston.format.timestamp({
+          format: "DD-MM-YYYY hh:mm:ss"
+        }),
+        winston.format.printf((info) => {
+          return `${info.timestamp} ${info.level} ${info.message}`;
+        })),
     }),
     new DailyRotateFile({
       filename: 'public/logs/debug-%DATE%.log',
-      datePattern: 'YYYY-MM-DD-HH',
+      datePattern: 'YYYY-MM-DD',
       zippedArchive: true,
       maxSize: '20m',
-      maxFiles: '14d'  
+      maxFiles: '14d',
+      timestamp: true,
+      format: winston.format.combine(
+        winston.format.timestamp({
+          format: "DD-MM-YYYY hh:mm:ss"
+        }),
+        winston.format.printf((info) => {
+          return `${info.timestamp} ${info.level} ` + JSON.stringify(info.message);
+        }))
     })
   ],
+});
+
+logger.info("starting");
+
+process.on('uncaughtException', (err, origin) => {
+  logger.error(
+    process.stderr.fd,
+    `Caught exception: ${err}\n` +
+    `Exception origin: ${origin}`
+  );
 });
 
 
@@ -134,7 +173,7 @@ function requestData()
   return getCurrentDay()
   .then((currentDayId) =>
   {
-    return evohomeClient.getLocationsWithAutoLogin(2147483)
+    return evohomeClient.getLocationsWithAutoLogin(1)
     .then(locations => {
       var result = {timestamp: new Date().getTime(), values:[]};
   
@@ -178,7 +217,7 @@ function login()
     {
       clearInterval(interval);
     }
-    interval = setInterval(iterate, 10 * 60 * 1000);
+    interval = setInterval(iterate, 1 * 60 * 1000);
     //interval = setInterval(iterate, 10 * 1000);
 
     return requestData();
