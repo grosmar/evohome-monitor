@@ -10,7 +10,7 @@ const logger = winston.createLogger({
       format: winston.format.simple(),
     }),
     new DailyRotateFile({
-      filename: 'error-%DATE%.log',
+      filename: 'public/logs/error-%DATE%.log',
       level: 'error',
       datePattern: 'YYYY-MM-DD-HH',
       zippedArchive: true,
@@ -18,7 +18,7 @@ const logger = winston.createLogger({
       maxFiles: '14d'  
     }),
     new DailyRotateFile({
-      filename: 'debug-%DATE%.log',
+      filename: 'public/logs/debug-%DATE%.log',
       datePattern: 'YYYY-MM-DD-HH',
       zippedArchive: true,
       maxSize: '20m',
@@ -180,7 +180,7 @@ function login()
     }
     interval = setInterval(iterate, 10 * 60 * 1000);
     //interval = setInterval(iterate, 10 * 1000);
-    
+
     return requestData();
 }
 
