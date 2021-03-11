@@ -173,7 +173,11 @@ function requestData()
   return getCurrentDay()
   .then((currentDayId) =>
   {
-    return evohomeClient.getLocationsWithAutoLogin(1)
+    return evohomeClient.getLocationsWithAutoLogin(600)
+    .catch(e => {
+      evohomeClient = new EvohomeClient(username, password);
+      return evohomeClient.getLocationsWithAutoLogin(600)
+    })
     .then(locations => {
       var result = {timestamp: new Date().getTime(), values:[]};
   
