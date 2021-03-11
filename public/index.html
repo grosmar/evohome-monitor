@@ -36,7 +36,7 @@
 		function loadJSON(url, callback) {   
 			var xobj = new XMLHttpRequest();
 				xobj.overrideMimeType("application/json");
-			xobj.open('GET', url, true); // Replace 'my_data' with the path to your file
+			xobj.open('GET', url, false); // Replace 'my_data' with the path to your file
 			xobj.onreadystatechange = function () {
 				if (xobj.readyState == 4 && xobj.status == "200") {
 					// Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
@@ -77,99 +77,90 @@
 			datasets: []
 		};
 
-		window.onload = function() {
-
+		function updateData()
+		{
 			var datasets = [];
 			var labels = [];
 			var colorIndex = 0;
 
 			//loadJSON('data.json', function(response) {
 			loadJSON('/data?limit=90', function(response) {
-    		var rawdata = JSON.parse(response);
+				var rawdata = JSON.parse(response);
 
-			rawdata = rawdata.reverse();
+				rawdata = rawdata.reverse();
 
-			var data = [];
-			for ( var i in rawdata )
-			{
-				var day = JSON.parse(rawdata[i].data);
-				for (var j in day)
+				var data = [];
+				for ( var i in rawdata )
 				{
-					console.log(j);
-					labels.push(getFormattedDate(day[j].timestamp));
-					data.push(day[j].values);
+					var day = JSON.parse(rawdata[i].data);
+					for (var j in day)
+					{
+						console.log(j);
+						labels.push(getFormattedDate(day[j].timestamp));
+						data.push(day[j].values);
+					}
+					
 				}
 				
-			}
-
-			/*lineChartData.labels = data.map((v) => { return getFormattedDate(v.timestamp) });
-
-			lineChartData.datasets[0].data = data.map((v) => { return v.cellar.target });
-			lineChartData.datasets[1].data = data.map((v) => { return v.cellar.temp });
-			lineChartData.datasets[2].data = data.map((v) => { return v.ground.target });
-			lineChartData.datasets[3].data = data.map((v) => { return v.ground.temp });
-			lineChartData.datasets[4].data = data.map((v) => { return v.first.target });
-			lineChartData.datasets[5].data = data.map((v) => { return v.first.temp });
-			
-			*/	
-
-			
-			
-			for (var i in data)
-			{
-				//data[i].data = JSON.parse(data[i].data);
-
-				//labels.push(getFormattedDate(data[i].createdAt));
-
-				for (var j in data[i])
+				for (var i in data)
 				{
-					var row = data[i][j];
-
-					if (row.name == null || row.name == "null")
-						continue;	
-
-						var index = datasets.findIndex((v) => {return v.label == row.name});
-				
-					if ( index == -1 )
+					for (var j in data[i])
 					{
-						var tempRow = {
-							label: row.name,
-							borderColor: colors[colorIndex].temp,
-							backgroundColor: colors[colorIndex].temp,
-							fill: false,
-							data: []
-						};
-						var targetRow = {
-							label: row.name + " Target",
-							borderColor: colors[colorIndex].target,
-							backgroundColor: colors[colorIndex].target,
-							fill: false,
-							data: []
-						};
-						colorIndex++;
-						if (colorIndex >= colors.length)
-							colorIndex = 0;
-						datasets.push(tempRow, targetRow);
+						var row = data[i][j];
 
-						var index = datasets.findIndex((v) => {return v.label == row.name});
-					}
-					else
-					{
-						var tempRow = datasets[index];
-						var targetRow = datasets[index + 1];
-					}
+						if (row.name == null || row.name == "null")
+							continue;	
 
-					tempRow.data.push(row.temp);
-					targetRow.data.push(row.target);
+							var index = datasets.findIndex((v) => {return v.label == row.name});
+					
+						if ( index == -1 )
+						{
+							var tempRow = {
+								label: row.name,
+								borderColor: colors[colorIndex].temp,
+								backgroundColor: colors[colorIndex].temp,
+								fill: false,
+								data: []
+							};
+							var targetRow = {
+								label: row.name + " Target",
+								borderColor: colors[colorIndex].target,
+								backgroundColor: colors[colorIndex].target,
+								fill: false,
+								data: []
+							};
+							colorIndex++;
+							if (colorIndex >= colors.length)
+								colorIndex = 0;
+							datasets.push(tempRow, targetRow);
+
+							var index = datasets.findIndex((v) => {return v.label == row.name});
+						}
+						else
+						{
+							var tempRow = datasets[index];
+							var targetRow = datasets[index + 1];
+						}
+
+						tempRow.data.push(row.temp);
+						targetRow.data.push(row.target);
+					}
 				}
-			}
 
-			console.log(datasets);
+				lineChartData.datasets = datasets;
+				lineChartData.labels = labels;
 
-			lineChartData.datasets = datasets;
-			lineChartData.labels = labels;
+				if ( window.myLine )
+				{
+					window.myLine.data = lineChartData;
+					window.myLine.update();
+				}
+			});
+		}
 
-			
+		window.onload = function() {
+			updateData();
+
 			var ctx = document.getElementById('canvas').getContext('2d');
 			window.myLine = Chart.Line(ctx, {
 				data: lineChartData,
@@ -210,9 +201,9 @@
 				}
 			});
 
-		});
-		
-	};
+			
+			setInterval(updateData, 10 * 60 * 1000);
+		};
 
 
 	</script>
