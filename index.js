@@ -5,7 +5,7 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp({
-      format: "DD-MM-YYYY-hh-MM"
+      format: "YYYY-MM-DD hh:mm:ss"
     }),
     winston.format.printf((info) => {
       return `${info.timestamp} ${info.level} ${info.message}`;
@@ -14,13 +14,30 @@ const logger = winston.createLogger({
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.timestamp({
-          format: "DD-MM-YYYY hh:MM:ss"
-        }),
-        winston.format.printf((info) => {
-          return `${info.timestamp} ${info.level} ${info.message}`;
-        })),
-      timestamp: true
+          winston.format.timestamp({
+            format: "YYYY-MM-DD hh:mm:ss"
+          }),
+          winston.format.printf((info) => {
+            return `${info.timestamp} ${info.level} ${info.message}`;
+          })),
+      log: function(info, callback) {
+        setImmediate(() => this.emit('logged', info));
+
+        if (this.stderrLevels[info["error"]]) {
+          console.error(info.message);
+      
+          if (callback) {
+            callback();
+          }
+          return;
+        }
+      
+        console.log(info.timestamp, info.message);
+      
+        if (callback) {
+          callback();
+        }
+      }
     }),
     new DailyRotateFile({
       filename: 'public/logs/error-%DATE%.log',
@@ -47,7 +64,7 @@ const logger = winston.createLogger({
       timestamp: true,
       format: winston.format.combine(
         winston.format.timestamp({
-          format: "DD-MM-YYYY hh:mm:ss"
+          format: "YYYY-MM-DD hh:mm:ss"
         }),
         winston.format.printf((info) => {
           return `${info.timestamp} ${info.level} ` + JSON.stringify(info.message);
@@ -71,6 +88,8 @@ const EvohomeClient = require('@svrooij/evohome/lib').EvohomeClient;
 const express = require('express');
 const db = require('./models/index.js');
 const { Op } = require("sequelize");
+const { wakeDyno } = require('heroku-keep-awake');
+
 
 var evohomeClient = null;
 var interval = null;
@@ -151,20 +170,24 @@ function getCurrentDay()
 
 function createCurrentDay()
 {
-  currentDayData = [];
-  currentDay = new Date();
-  db.Thermostat.create({data:JSON.stringify(currentDayData)})
-  .then((data) =>
+  return new Promise((resolve, reject) =>
   {
-    currentDayId = data.id;
-    logger.info(currentDayId);
-    return currentDayId;
+    currentDayData = [];
+    currentDay = new Date();
+
+    db.Thermostat.create({data:JSON.stringify(currentDayData)})
+    .then((data) =>
+    {
+      currentDayId = data.id;
+      logger.info(currentDayId);
+      resolve(currentDayId);
+    })
+    .catch((e) =>
+    {
+      logger.info(e);
+      reject(e);
+    });
   })
-  .catch((e) =>
-  {
-    logger.info(e);
-    return e;
-  });
 }
 
 function requestData() 
@@ -256,5 +279,6 @@ app.get('/login', (req, res) => {
 })
 
 app.listen(port, () => {
-  logger.info(`Example app listening at http://localhost:${port}`)
+  logger.info(`Example app listening at http://localhost:${port}`);
+  wakeDyno("http://evohome-monitor.herokuapp.com/");
 })
