@@ -28,6 +28,7 @@
 		</div>
 	</center>
 	<script>
+		var weatheColor = "rgb(200,200,200)";
 		var colors = [
 			{"temp" : "rgb(255,0,0)", "target": "rgb(255,0,0,0.5)"},
 			{"temp" : "rgb(0,255,0)", "target": "rgb(0,255,0,0.5)"},
@@ -79,7 +80,16 @@
 
 		function updateData()
 		{
-			var datasets = [];
+			var weatherRow = {
+								label: "Weather",
+								borderColor: weatheColor,
+								backgroundColor: weatheColor,
+								pointRadius: 1,	
+								pointHoverRadius: 2,
+								fill: false,
+								data: []
+							};
+			var datasets = [weatherRow];
 			var labels = [];
 			var colorIndex = 0;
 
@@ -95,9 +105,9 @@
 					var day = JSON.parse(rawdata[i].data);
 					for (var j in day)
 					{
-						console.log(j);
 						labels.push(getFormattedDate(day[j].timestamp));
 						data.push(day[j].values);
+						weatherRow.data.push(day[j].weather);
 					}
 					
 				}

@@ -89,6 +89,7 @@ const express = require('express');
 const db = require('./models/index.js');
 const { Op } = require("sequelize");
 const { wakeDyno } = require('heroku-keep-awake');
+const got = require('got');
 
 
 var evohomeClient = null;
@@ -96,6 +97,8 @@ var interval = null;
 
 var username = '';
 var password = '';
+var city = '';
+var weatherApiKey = '';
 
 var currentDay = new Date();
 var currentDayData = [];
@@ -103,16 +106,17 @@ var currentDayId = null;
 
 const fs = require('fs');
 
-function getCurrentDay()
+async function getCurrentDay()
 {
-  return new Promise((resolve, reject) =>
+  if (currentDayId == null )
   {
-    if (currentDayId == null )
-    {
-      var start = new Date();
-      start.setHours(0,0,0,0);
+    var start = new Date();
+    start.setHours(0,0,0,0);
 
-      db.Thermostat.findOne({
+    let data;
+    try
+    {
+      data = await db.Thermostat.findOne({
         order: [['createdAt', 'DESC']], 
         limit: 1,
         where: {
@@ -121,123 +125,141 @@ function getCurrentDay()
             [Op.gt]: start
           }
         }
-      })
-      .then(data => {
-        if ( data == null )
-        {
-          logger.info("create new day");
-          createCurrentDay()
-          .then((currentDayId) => 
-          {
-            resolve(currentDayId);
-          })
-          .catch((e) =>
-          {
-            reject(e);
-          });
-        }
-        else
-        {
-          currentDayData = JSON.parse(data.data);
-          currentDayId = data.id;
-          logger.info("found last day", currentDayId);
-          
-          resolve(currentDayId);
-        }  
       });
     }
-    else 
+    catch(e)
     {
-      if (new Date().getDate() != currentDay.getDate())
-      {
-        return createCurrentDay()
-        .then((currentDayId) =>
-        {
-          resolve(currentDayId);
-        })
-        .catch((e) =>
-        {
-          reject(e);
-        });
-      }
-      else
-      {
-        return resolve(currentDayId);
-      }
+      logger.error("failed to get sql data", e);
     }
-  });
-}
 
-function createCurrentDay()
-{
-  return new Promise((resolve, reject) =>
-  {
-    currentDayData = [];
-    currentDay = new Date();
-
-    db.Thermostat.create({data:JSON.stringify(currentDayData)})
-    .then((data) =>
+    if ( data == null )
     {
+      logger.info("create new day");
+      return await createCurrentDay();
+    }
+    else
+    {
+      currentDayData = JSON.parse(data.data);
       currentDayId = data.id;
-      logger.info(currentDayId);
-      resolve(currentDayId);
-    })
-    .catch((e) =>
+      logger.info("found last day", currentDayId);
+      
+      return currentDayId;
+    }  
+  }
+  else 
+  {
+    if (new Date().getDate() != currentDay.getDate())
     {
-      logger.info(e);
-      reject(e);
-    });
-  })
+      return await createCurrentDay();
+    }
+    else
+    {
+      return currentDayId;
+    }
+  }
 }
 
-function requestData() 
+async function createCurrentDay()
 {
-  logger.info("requestData", currentDayId);
-  return getCurrentDay()
-  .then((currentDayId) =>
+  currentDayData = [];
+  currentDay = new Date();
+
+  try
   {
-    return evohomeClient.getLocationsWithAutoLogin(600)
-    .catch(e => {
+    let data = await db.Thermostat.create({data:JSON.stringify(currentDayData)})
+    currentDayId = data.id;
+    logger.info(currentDayId);
+    return currentDayId;
+  }
+  catch (e)
+  {
+    logger.error("failed to create current day", e);
+    return null;
+  }
+}
+
+async function requestData() 
+{
+  logger.info("requestData");
+  console.log("requestData");
+  let weather = await getWeather();
+  
+  let currentDayId = await getCurrentDay();
+  var locations = null;
+  
+  try {
+    locations = await evohomeClient.getLocationsWithAutoLogin(600);
+  }
+  catch (e)
+  {
+    try 
+    {
       evohomeClient = new EvohomeClient(username, password);
-      return evohomeClient.getLocationsWithAutoLogin(600)
-    })
-    .then(locations => {
-      var result = {timestamp: new Date().getTime(), values:[]};
-  
-      for (var i = 0; i < locations[0].devices.length; i++)
-      {
-        var device = locations[0].devices[i];
-        var deviceName = device.name.split(" ")[0];
-        if (deviceName && deviceName.length > 0)
-        {
-          var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
-          result.values.push(row);
-        }
-      }
+      locations = await evohomeClient.getLocationsWithAutoLogin(600);
+    }
+    catch (e)
+    {
+      logger.error("failed to get evohome", e);
+      return;
+    }
+  }
 
-      logger.info(result);
-  
-      currentDayData.push(result);
-  
-      return db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
-    });
-  })
+  var result = {timestamp: new Date().getTime(), values:[], weather: weather};
+
+  for (var i = 0; i < locations[0].devices.length; i++)
+  {
+    var device = locations[0].devices[i];
+    var deviceName = device.name.split(" ")[0];
+    if (deviceName && deviceName.length > 0)
+    {
+      var row = {name: deviceName, temp: device.thermostat.indoorTemperature, target: device.thermostat.changeableValues.heatSetpoint.value};
+      result.values.push(row);
+    }
+  }
+
+  logger.info(result);
+  currentDayData.push(result);
+
+  try 
+  {
+    var saved = await db.Thermostat.update({data:JSON.stringify(currentDayData)}, {where: {id: currentDayId}})
+  }
+  catch (e)
+  {
+    logger.error("failed to save data", e);
+  }
+
+  return result;
 }
 
-function iterate()
+async function getWeather() {
+  try {
+    console.log("getWeather");
+		const response = await got('https://api.weatherapi.com/v1/current.json?key=' + weatherApiKey +'&q=' + city + '&aqi=no', {responseType: 'json', resolveBodyOnly: true});
+    return response.current.temp_c;
+	} catch (error) {
+		logger.error(error.response.body);
+	}
+
+  return NaN;
+
+}
+
+
+async function iterate()
 {
-  requestData()
-  .then( () =>
+  try
   {
-  })
-  .catch( (e) =>
+    var result = await requestData()
+  }
+  catch (e)
   {
     logger.error("request error");
     logger.error(e);
-  });
+  }
 }
 
-function login()
+async function login()
 {
     evohomeClient = new EvohomeClient(username, password)
     if (interval) 
@@ -265,6 +287,8 @@ app.get('/data', (req, res) => {
 app.get('/login', (req, res) => {
   username = req.query.username;
   password = req.query.password;
+  city = req.query.city;
+  weatherApiKey = req.query.weatherapikey;
 
   login()
   .then(function(result)
