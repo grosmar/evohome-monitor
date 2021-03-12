@@ -30,9 +30,9 @@
 	<script>
 		var weatheColor = "rgb(200,200,200)";
 		var colors = [
-			{"temp" : "rgb(255,0,0)", "target": "rgb(255,0,0,0.5)"},
-			{"temp" : "rgb(0,255,0)", "target": "rgb(0,255,0,0.5)"},
-			{"temp" : "rgb(0,0,255)", "target": "rgb(0,0,255,0.5)"}];
+			{"temp" : "rgb(255,0,0,.7)", "target": "rgb(125,0,0,.7)"},
+			{"temp" : "rgb(0,255,0,.7)", "target": "rgb(0,125,0,.7)"},
+			{"temp" : "rgb(0,0,255,.7)", "target": "rgb(0,0,125,.7)"}];
 
 		function loadJSON(url, callback) {   
 			var xobj = new XMLHttpRequest();
@@ -84,7 +84,7 @@
 								label: "Weather",
 								borderColor: weatheColor,
 								backgroundColor: weatheColor,
-								pointRadius: 1,	
+								pointRadius: 0,	
 								pointHoverRadius: 2,
 								fill: false,
 								data: []
@@ -129,7 +129,7 @@
 								label: row.name,
 								borderColor: colors[colorIndex].temp,
 								backgroundColor: colors[colorIndex].temp,
-								pointRadius: 1,	
+								pointRadius: 0,	
 								pointHoverRadius: 2,
 								fill: false,
 								data: []
@@ -138,7 +138,7 @@
 								label: row.name + " Target",
 								borderColor: colors[colorIndex].target,
 								backgroundColor: colors[colorIndex].target,
-								pointRadius: 1,	
+								pointRadius: 0,	
 								pointHoverRadius: 2,
 								fill: false,
 								data: []
@@ -207,8 +207,8 @@
 								labelString: 'Value'
 							},
 							ticks: {
-								min: 5,
-								max: 30
+								min: -15,
+								max: 40
 							}
 						}]
 					}
