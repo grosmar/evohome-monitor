@@ -88,7 +88,7 @@ const EvohomeClient = require('@svrooij/evohome/lib').EvohomeClient;
 const express = require('express');
 const db = require('./models/index.js');
 const { Op } = require("sequelize");
-const { wakeDyno } = require('heroku-keep-awake');
+const wakeDyno = require("woke-dyno");
 const got = require('got');
 
 
@@ -304,5 +304,5 @@ app.get('/login', (req, res) => {
 
 app.listen(port, () => {
   logger.info(`Example app listening at http://localhost:${port}`);
-  wakeDyno("http://evohome-monitor.herokuapp.com/");
+  wakeDyno("http://evohome-monitor.herokuapp.com/").start();
 })

@@ -12,12 +12,12 @@
     "@svrooij/evohome": "^1.0.2",
     "express": "^4.17.1",
     "got": "^11.8.2",
-    "heroku-keep-awake": "^1.1.2",
     "pg": "^8.5.1",
     "pg-hstore": "^2.3.3",
     "sequelize": "^6.5.0",
     "sequelize-cli": "^6.2.0",
     "winston": "^3.3.3",
-    "winston-daily-rotate-file": "^4.5.1"
+    "winston-daily-rotate-file": "^4.5.1",
+    "woke-dyno": "^0.0.4"
   }
 }
